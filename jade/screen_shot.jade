@@ -1,0 +1,23 @@
+!!! 5
+html
+  head
+    meta( chart="utf-8" )
+    title Screen Shot
+    link( rel="stylesheet", href="css/jquery-ui-1.10.3.css" )
+    link( rel="stylesheet", href="css/screen_shot.css" )
+  body
+    div( id="shot-canvas", class="shot-canvas" )
+    img( id="cuted", src="", width="200px", height="200px" )
+
+    script( src="http://code.jquery.com/jquery-1.10.1.min.js" )
+    script( src="js/jquery-ui-1.10.3.min.js" )
+    script( src="js/screen_shot.js" )
+    script
+      $( function () {
+        ScreenShot.init( {
+          root: '#shot-canvas',
+          getImgUrl: function ( src ) {
+            console.log( src );
+          }
+        } );
+      } );
