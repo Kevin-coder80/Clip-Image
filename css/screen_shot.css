@@ -8,8 +8,13 @@ canvas {
 }
 .shot-canvas {
   background: #000;
-  border: 1px solid #f00;
+  border: 2px solid #f00;
   width: 500px;
   height: 300px;
   overflow: hidden;
+}
+.drag {
+  *background: #fff
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+  filter: alpha( opacity=50 )
 }

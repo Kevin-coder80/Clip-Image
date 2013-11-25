@@ -10,11 +10,9 @@ ScreenShot = (function() {
     gCxt.fillStyle = 'transparent';
     setTimeout(function() {
       _invokeJqueryPlugs(conf.root);
-    }, 300);
+    }, 2000);
   };
   _invokeJqueryPlugs = function(root) {
-    var item;
-    item = null;
     $('#drag').draggable({
       drag: function() {
         _setView(_getCutData(this));
@@ -66,13 +64,16 @@ ScreenShot = (function() {
     }
   };
   _getImgUrl = function(callback) {
-    var src;
-    src = elements.canvas.toDataURL('image/png');
-    if (typeof callback === "function") {
-      callback(src);
+    var src, _base;
+    if (typeof (_base = elements.canvas).toDataURL === "function" ? _base.toDataURL() : void 0) {
+      element.canvas.toDataURL();
+      src = elements.canvas.toDataURL('image/png');
+      $('#cuted').attr('src', src);
+      if (typeof callback === "function") {
+        callback(src);
+      }
+      return src;
     }
-    $('#cuted').attr('src', src);
-    return src;
   };
   _restrictDragPos = function(drag, root) {
     var height, item, left, top, width, _ref, _ref1;
@@ -84,25 +85,25 @@ ScreenShot = (function() {
     }, width = _ref1.width, height = _ref1.height;
     if (left < imgConf.left) {
       item.css({
-        left: imgConf.left
+        left: imgConf.left + 5
       });
       return false;
     }
     if (top < imgConf.top) {
       item.css({
-        top: imgConf.top
+        top: imgConf.top + 5
       });
       return false;
     }
     if (left + width > imgConf.left + imgConf.width) {
       item.css({
-        left: left - ((left + width) - (imgConf.left + imgConf.width)) - 2
+        left: left - ((left + width) - (imgConf.left + imgConf.width)) - 7
       });
       return false;
     }
     if (top + height > imgConf.top + imgConf.height) {
       item.css({
-        top: top - ((top + height) - (imgConf.top + imgConf.height)) - 2
+        top: top - ((top + height) - (imgConf.top + imgConf.height)) - 7
       });
       return false;
     }
@@ -141,30 +142,38 @@ ScreenShot = (function() {
       };
       $(this).css({
         width: '400px',
+        height: 'auto',
         verticalAlign: 'middle'
       });
       _ref1 = $(this).position(), left = _ref1.left, top = _ref1.top;
       $.extend(imgConf, {
         left: left,
         top: top,
-        width: img.width(),
-        height: img.height()
+        width: $(this).width(),
+        height: $(this).height()
       });
       drag = $('<div>').attr('id', 'drag').css({
         position: 'absolute',
         width: '100px',
         height: '100px',
-        left: left + 'px',
-        top: top + 'px',
+        left: left + 5 + 'px',
+        top: top + 5 + 'px',
         cursor: 'move',
-        border: '2px solid yellow'
+        border: '3px dotted #fff',
+        backgroundColor: 'rgba( 255, 255, 255, 0 )'
       });
+      drag.addClass("drag");
       root.append(drag);
     });
     root.append(img);
     root.before(canvas, clipBtn);
+    if ($.browser.msie && $.browser.version < 9) {
+      canvas = window.G_vmlCanvasManager.initElement(canvas.get(0));
+    } else {
+      canvas = canvas.get(0);
+    }
     return {
-      canvas: canvas.get(0)
+      canvas: canvas
     };
   };
   return {

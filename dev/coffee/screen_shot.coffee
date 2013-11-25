@@ -8,12 +8,11 @@ ScreenShot = do ->
     setTimeout ->
       _invokeJqueryPlugs( conf.root )
       return
-    , 300
+    , 2000
     return
 
   # 调用jQuery插件
   _invokeJqueryPlugs = ( root ) ->
-    item = null
     $( '#drag' ).draggable
       drag: ->
         _setView( _getCutData( this ) )
@@ -66,10 +65,12 @@ ScreenShot = do ->
 
   # 获取裁剪后图片的地址
   _getImgUrl = ( callback ) ->
-    src = elements.canvas.toDataURL( 'image/png' )
-    callback?( src );
-    $( '#cuted' ).attr( 'src', src )
-    return src
+    if elements.canvas.toDataURL?()
+      element.canvas.toDataURL()
+      src = elements.canvas.toDataURL( 'image/png' )
+      $( '#cuted' ).attr( 'src', src )
+      callback?( src );
+      return src
 
   # 限制拖拽元素的最大位移
   _restrictDragPos = ( drag, root ) ->
@@ -81,22 +82,22 @@ ScreenShot = do ->
 
     if left < imgConf.left
       item.css
-        left: imgConf.left
+        left: imgConf.left + 5
       return no
 
     if top < imgConf.top
       item.css
-        top: imgConf.top
+        top: imgConf.top + 5
       return no
 
     if left + width > imgConf.left + imgConf.width
       item.css
-        left: left - ( ( left + width ) - ( imgConf.left + imgConf.width ) ) - 2
+        left: left - ( ( left + width ) - ( imgConf.left + imgConf.width ) ) - 7
       return no
 
     if top + height > imgConf.top + imgConf.height
       item.css
-        top: top - ( ( top + height ) - ( imgConf.top + imgConf.height ) ) - 2
+        top: top - ( ( top + height ) - ( imgConf.top + imgConf.height ) ) - 7
       return no
     return yes
 
@@ -133,33 +134,42 @@ ScreenShot = do ->
 
       $( this ).css
         width: '400px'
+        height: 'auto'
         verticalAlign: 'middle'
 
       {left, top} = $( this ).position()
       $.extend( imgConf,
         left: left
         top: top
-        width: img.width()
-        height: img.height()
+        width: $( this ).width()
+        height: $( this ).height()
       )
 
       drag = $( '<div>' ).attr( 'id', 'drag' ).css
         position: 'absolute'
         width: '100px'
         height: '100px'
-        left: left + 'px'
-        top: top + 'px'
+        left: left + 5 + 'px'
+        top: top + 5 + 'px'
         cursor: 'move'
-        border: '2px solid yellow'
+        border: '3px dotted #fff'
+        backgroundColor: 'rgba( 255, 255, 255, 0 )'
+      drag.addClass( "drag" )
 
       root.append( drag )
       return
 
     root.append( img )
     root.before( canvas, clipBtn )
+    if $.browser.msie and $.browser.version < 9
+      # 此方法来自于excanvas.js
+      # 用以初始化动态创建的canvas
+      canvas = window.G_vmlCanvasManager.initElement( canvas.get( 0 ) )
+    else
+      canvas = canvas.get( 0 )
 
     {
-      canvas: canvas.get( 0 )
+      canvas: canvas
     }
 
   {

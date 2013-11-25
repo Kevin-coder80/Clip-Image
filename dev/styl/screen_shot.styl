@@ -6,7 +6,14 @@ canvas
   border 1px solid green
 .shot-canvas
   background #000
-  border 1px solid red;
+  border 2px solid red;
   width 500px
   height 300px
   overflow hidden
+@css {
+  .drag {
+    *background: #fff
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+    filter: alpha( opacity=50 )
+  }
+}

@@ -5,11 +5,16 @@ html
     title Screen Shot
     link( rel="stylesheet", href="css/jquery-ui-1.10.3.css" )
     link( rel="stylesheet", href="css/screen_shot.css" )
+    //if lt IE 9
+      script( src="js/html5shiv.min.js" )
+      script( src="js/excanvas.compiled.js" )
+
   body
     div( id="shot-canvas", class="shot-canvas" )
     img( id="cuted", src="", width="200px", height="200px" )
 
     script( src="http://code.jquery.com/jquery-1.10.1.min.js" )
+    script( src="js/jquery-migrate-1.1.1.min.js" )
     script( src="js/jquery-ui-1.10.3.min.js" )
     script( src="js/screen_shot.js" )
     script
