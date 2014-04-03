@@ -1,34 +1,71 @@
 ScreenShot = do ->
-  gCxt = elements = imgConf = null
+  gCxt = elements = imgConf = cutCanvas = null
+  alsoResize = aspectRatio = true
 
   _init = ( conf ) ->
-    elements = _create( conf.root, conf.getImgUrl )
-    gCxt = elements.canvas.getContext( '2d' )
-    gCxt.fillStyle = 'transparent'
+    elements = _create( conf )
+    alsoResize = conf.isRatio or alsoResize
+    aspectRatio = conf.isRatio or aspectRatio
+
     setTimeout ->
-      _invokeJqueryPlugs( conf.root )
+      _invokeJqueryPlugs( conf )
       return
-    , 2000
-    return
+    , 1000
+
+    elements
 
   # 调用jQuery插件
-  _invokeJqueryPlugs = ( root ) ->
-    $( '#drag' ).draggable
-      drag: ->
-        _setView( _getCutData( this ) )
-        _restrictDragPos( this, root )
+  _invokeJqueryPlugs = ( conf ) ->
+    $drag = $( '#drag' )
 
-    $( '#drag' ).resizable
+    $drag.draggable
+      drag: ->
+        data = _getCutData( this )
+        _setView( data )
+        _restrictDragPos( this, conf.root )
+
+    $drag.resizable
+      containment: '.big'
+      alsoResize: conf.isRatio or conf.alsoResize or false
+      aspectRatio: conf.isRatio or conf.aspectRatio or false
       minWidth: 100
       minHeight: 100
-      maxWidth: imgConf.width - 2
-      maxHeight: imgConf.height - 2
       resize: ->
-        _setView( _getCutData( this ) )
+        data = _getCutData( this )
+        _setView( data )
+    return
+
+  # 自定义比例缩放
+  _bindClipAsRatioEvent = ()->
+    drag = $( '#drag' ).get( 0 )
+    wClip = imgConf.wClip
+    hClip = imgConf.hClip
+
+    wClip.bind 'keyup', ()->
+      _clipAsRatio( this.value, 'w' )
+      _setView( _getCutData( drag ) )
+
+    hClip.bind 'keyup', ()->
+      _clipAsRatio( this.value, 'h' )
+      _setView( _getCutData( drag ) )
+
+  # 按比例缩放截图区域
+  _clipAsRatio = ( val, type ) ->
+    drag = $( '#drag' )
+    wDrag = drag.width()
+    hDrag = drag.height()
+
+    if type is 'w' and val > wDrag
+      drag.css
+        width: wDrag * ( val / wDrag ) + 'px'
+    if type is 'h' and val > hDrag
+      drag.css
+        height: hDrag * ( val / hDrag ) + 'px'
     return
 
   # 返回裁剪图片时所需要用的数据
   _getCutData = ( drag ) ->
+    size = []
     item = $( drag )
     {left, top} = item.position()
 
@@ -40,9 +77,12 @@ ScreenShot = do ->
       sx: left - imgConf.left
       sy: top - imgConf.top
 
-    {dw, dh} =
-      dw: elements.canvas.width
-      dh: elements.canvas.height
+    for item in elements
+      if item.canvas?
+        {dw, dh} =
+          dw: item.canvas.width
+          dh: item.canvas.height
+        size.push {dw, dh}
 
     {
       img: imgConf.img
@@ -52,28 +92,38 @@ ScreenShot = do ->
       sh: sh / imgConf.height * imgConf.orgHeight
       dx: 0
       dy: 0
-      dw: dw
-      dh: dh
+      dsize: size
     }
 
   # 显示被裁剪原图
   _setView = ( conf ) ->
     if conf.sx >= 0 and conf.sy >= 0
-      gCxt.clearRect( 0, 0, conf.dw, conf.dh )
-      gCxt.drawImage( conf.img, conf.sx, conf.sy, conf.sw, conf.sh, conf.dx, conf.dy, conf.dw, conf.dh )
+      for item, i in elements
+        if item.canvas?
+          item.cxt.clearRect( 0, 0, conf.dw, conf.dh )
+          item.cxt.drawImage( conf.img, conf.sx, conf.sy, conf.sw, conf.sh, conf.dx, conf.dy, conf.dsize[ i ].dw, conf.dsize[ i ].dh )
     return
 
-  # 获取裁剪后图片的地址
-  _getImgUrl = ( callback ) ->
-    if elements.canvas.toDataURL?()
-      element.canvas.toDataURL()
-      src = elements.canvas.toDataURL( 'image/png' )
-      $( '#cuted' ).attr( 'src', src )
-      callback?( src );
-      return src
+  # 当图像内容改变时，重新显示预览图
+  _reDraw = ( src ) ->
+    $drag = $( '#drag' )
+    $img = $( imgConf.img ).attr( 'src', src )
+
+  # 获取裁剪后预览图片的base64地址
+  _getPreviwerSrcs = ( callback ) ->
+    urls = []
+    for item in elements
+      if item.canvas?
+        urls.push item.canvas.toDataURL( 'image/png' )
+    callback?( urls );
+
+  # 获取裁剪图片的base64地址
+  _getCutImgSrc = ( callback ) ->
+    src = elements[ elements.length-2 ].canvas.toDataURL( 'image/png' )
+    callback?( src )
 
   # 限制拖拽元素的最大位移
-  _restrictDragPos = ( drag, root ) ->
+  _restrictDragPos = ( drag ) ->
     item = $( drag )
     { left, top } = item.position()
     { width, height } =
@@ -102,27 +152,26 @@ ScreenShot = do ->
     return yes
 
   # 创建canvas和拖拽对象
-  _create = ( id, getImgUrl ) ->
-    root = $( id ).css
-      position: 'relative'
-      lineHeight: $( id ).height() + 'px'
+  _create = ( conf ) ->
+    root = $( conf.root ).css
+      lineHeight: $( conf.root ).height() + 'px'
 
-    canvas = $( '<canvas>' ).css
-      float: 'left'
-      width: '200px'
-      height: '200px'
-      float: 'right'
+    # 裁剪数据及事件
+    ratio =
+      wClip: ()->
+        $( '<input type="text" value="0" >' )
+      hClip: ()->
+        $( '<input type="text" value="0" >' )
 
-    clipBtn = $( '<input type="button" value="裁剪">' ).css
-      display: 'block'
-
-    clipBtn.click ->
-      _getImgUrl( getImgUrl )
-      return
-
-    img = $( '<img>' ).attr( 'src', 'images/5.jpg' )
+    # 生成被裁图片并加载拖拽层
+    img = $( '<img>' ).attr( 'src', conf.src )
     img.attr( 'id', 'source-image' )
+    img.addClass( 'cut-img' )
     img.bind 'load', ->
+      $( this ).css
+        width: 'auto'
+        verticalAlign: 'middle'
+
       {orgWidth, orgHeight} =
         orgWidth: $( this ).width()
         orgHeight: $( this ).height()
@@ -134,8 +183,6 @@ ScreenShot = do ->
 
       $( this ).css
         width: '400px'
-        height: 'auto'
-        verticalAlign: 'middle'
 
       {left, top} = $( this ).position()
       $.extend( imgConf,
@@ -145,33 +192,80 @@ ScreenShot = do ->
         height: $( this ).height()
       )
 
-      drag = $( '<div>' ).attr( 'id', 'drag' ).css
-        position: 'absolute'
-        width: '100px'
-        height: '100px'
-        left: left + 5 + 'px'
-        top: top + 5 + 'px'
-        cursor: 'move'
-        border: '3px dotted #fff'
-        backgroundColor: 'rgba( 255, 255, 255, 0 )'
-      drag.addClass( "drag" )
+      if $( '#drag' ).length is 0
+        drag = $( '<div>' ).attr( 'id', 'drag' ).css
+          position: 'absolute'
+          width: '100px'
+          height: '100px'
+          left: imgConf.width / 2 - 50 + 'px'
+          top: imgConf.height / 2 - 50 + 'px'
+          cursor: 'move'
+          border: '3px dotted #fff'
+          backgroundColor: 'rgba( 255, 255, 255, 0 )'
+        drag.addClass( "drag" )
+        root.append( drag )
+      else
+        drag = $( '#drag' )
 
-      root.append( drag )
+      data = _getCutData( drag[ 0 ] )
+      _setView( data )
       return
-
     root.append( img )
-    root.before( canvas, clipBtn )
-    if $.browser.msie and $.browser.version < 9
-      # 此方法来自于excanvas.js
-      # 用以初始化动态创建的canvas
-      canvas = window.G_vmlCanvasManager.initElement( canvas.get( 0 ) )
-    else
-      canvas = canvas.get( 0 )
 
-    {
-      canvas: canvas
-    }
+    # 创建canvas
+    canvasAll = []
+    if conf.multiImage? and conf.multiImage.length > 0
+      for item, i in conf.multiImage
+        $item = $( item )
+        w = $item.width()
+        h = $item.height()
+        canvas = $( '<canvas>' ).get( 0 )
+        canvas.width = w
+        canvas.height = h
+        canvasAll.push canvas
+
+    if conf.max?
+      canvas = $( '<canvas>' ).hide()
+      canvas = canvas.get( 0 )
+      canvas.width = conf.max.width
+      canvas.height = conf.max.height
+      canvasAll.push canvas
+
+    if conf.multiImage? and conf.multiImage.length > 0
+      for item, i in  canvasAll
+        $wraper = $( conf.multiImage[ i ] )
+        $wraper.append item
+    if conf.max?
+        root.append( canvasAll[ canvasAll.length-1 ] )
+
+    # 做IE兼容
+    if $.browser.msie and $.browser.version < 9
+      # 此方法来自于flashcanvas.js
+      # 用以初始化动态创建的canvas
+      if conf.multiImage? and conf.multiImage.length > 0
+        flashCanvasAll = []
+        for val, i in canvasAll
+          canvas = FlashCanvas.initElement( val )
+          canvas.width =  conf.multiImage[ i ].width + 'px'
+          canvas.height = conf.multiImage[ i ].height + 'px'
+          flashCanvasAll.push canvas
+        canvasAll = flashCanvasAll;
+
+    # 返回数组对象
+    elements = []
+    for canvas in canvasAll
+      item =
+        cxt: canvas.getContext( '2d' )
+        canvas: canvas
+      item.cxt.fillStyle = 'transparent'
+      elements.push item
+
+    elements.push img
+    return elements
 
   {
     init: _init
+    reDraw: _reDraw
+    getPreviewSrcs: _getPreviwerSrcs
+    getCutImgSrc: _getCutImgSrc
   }

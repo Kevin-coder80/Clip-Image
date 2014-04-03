@@ -7,11 +7,23 @@ html
     link( rel="stylesheet", href="css/screen_shot.css" )
     //if lt IE 9
       script( src="js/html5shiv.min.js" )
-      script( src="js/excanvas.compiled.js" )
+      script( src="js/flashcanvas.js")
 
   body
-    div( id="shot-canvas", class="shot-canvas" )
-    img( id="cuted", src="", width="200px", height="200px" )
+    a.cut( href="#" ) 剪切
+    a.change( href="#" ) 切换
+    .row.preview
+      .col-xs-6
+        .big( style="position: relative; width: 400px")
+      .col-xs-4
+        .medium.canvas-wraper( style="width: 150px; height: 150px")
+        | 150x150像素
+      .col-xs-2
+        .small.canvas-wraper( style="width: 75px; height: 75px")
+        | 75x75像素
+        .smaller.canvas-wraper( style="width: 50px; height: 50px")
+        | 50x50像素
+
 
     script( src="http://code.jquery.com/jquery-1.10.1.min.js" )
     script( src="js/jquery-migrate-1.1.1.min.js" )
@@ -19,10 +31,31 @@ html
     script( src="js/screen_shot.js" )
     script
       $( function () {
-        ScreenShot.init( {
-          root: '#shot-canvas',
-          getImgUrl: function ( src ) {
-            console.log( src );
+        var elements = ScreenShot.init( {
+          root: $( '.big' ),
+          src: 'images/5.jpg',
+          isRatio: false,
+          multiImage: $( '.canvas-wraper' ),
+          max: {
+            width: 500,
+            height: 500
           }
         } );
+
+        $( '.change' ).bind( 'click', function () {
+          ScreenShot.reDraw( 'images/14022.jpg' );
+        } )
+
+        $( '.cut' ).bind( 'click', function () {
+          /*
+          ScreenShot.getPreviewSrcs( function ( src ) {
+            console.log( src );
+          } );
+          */
+
+          ScreenShot.getCutImgSrc( function ( src ) {
+            console.log( src )
+          } )
+          return false;
+        } )
       } );

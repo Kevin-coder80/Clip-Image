@@ -2,35 +2,75 @@
 var ScreenShot;
 
 ScreenShot = (function() {
-  var elements, gCxt, imgConf, _create, _getCutData, _getImgUrl, _init, _invokeJqueryPlugs, _restrictDragPos, _setView;
-  gCxt = elements = imgConf = null;
+  var alsoResize, aspectRatio, cutCanvas, elements, gCxt, imgConf, _bindClipAsRatioEvent, _clipAsRatio, _create, _getCutData, _getCutImgSrc, _getPreviwerSrcs, _init, _invokeJqueryPlugs, _reDraw, _restrictDragPos, _setView;
+  gCxt = elements = imgConf = cutCanvas = null;
+  alsoResize = aspectRatio = true;
   _init = function(conf) {
-    elements = _create(conf.root, conf.getImgUrl);
-    gCxt = elements.canvas.getContext('2d');
-    gCxt.fillStyle = 'transparent';
+    elements = _create(conf);
+    alsoResize = conf.isRatio || alsoResize;
+    aspectRatio = conf.isRatio || aspectRatio;
     setTimeout(function() {
-      _invokeJqueryPlugs(conf.root);
-    }, 2000);
+      _invokeJqueryPlugs(conf);
+    }, 1000);
+    return elements;
   };
-  _invokeJqueryPlugs = function(root) {
-    $('#drag').draggable({
+  _invokeJqueryPlugs = function(conf) {
+    var $drag;
+    $drag = $('#drag');
+    $drag.draggable({
       drag: function() {
-        _setView(_getCutData(this));
-        return _restrictDragPos(this, root);
+        var data;
+        data = _getCutData(this);
+        _setView(data);
+        return _restrictDragPos(this, conf.root);
       }
     });
-    $('#drag').resizable({
+    $drag.resizable({
+      containment: '.big',
+      alsoResize: conf.isRatio || conf.alsoResize || false,
+      aspectRatio: conf.isRatio || conf.aspectRatio || false,
       minWidth: 100,
       minHeight: 100,
-      maxWidth: imgConf.width - 2,
-      maxHeight: imgConf.height - 2,
       resize: function() {
-        return _setView(_getCutData(this));
+        var data;
+        data = _getCutData(this);
+        return _setView(data);
       }
     });
   };
+  _bindClipAsRatioEvent = function() {
+    var drag, hClip, wClip;
+    drag = $('#drag').get(0);
+    wClip = imgConf.wClip;
+    hClip = imgConf.hClip;
+    wClip.bind('keyup', function() {
+      _clipAsRatio(this.value, 'w');
+      return _setView(_getCutData(drag));
+    });
+    return hClip.bind('keyup', function() {
+      _clipAsRatio(this.value, 'h');
+      return _setView(_getCutData(drag));
+    });
+  };
+  _clipAsRatio = function(val, type) {
+    var drag, hDrag, wDrag;
+    drag = $('#drag');
+    wDrag = drag.width();
+    hDrag = drag.height();
+    if (type === 'w' && val > wDrag) {
+      drag.css({
+        width: wDrag * (val / wDrag) + 'px'
+      });
+    }
+    if (type === 'h' && val > hDrag) {
+      drag.css({
+        height: hDrag * (val / hDrag) + 'px'
+      });
+    }
+  };
   _getCutData = function(drag) {
-    var dh, dw, item, left, sh, sw, sx, sy, top, _ref, _ref1, _ref2, _ref3;
+    var dh, dw, item, left, sh, size, sw, sx, sy, top, _i, _len, _ref, _ref1, _ref2, _ref3;
+    size = [];
     item = $(drag);
     _ref = item.position(), left = _ref.left, top = _ref.top;
     _ref1 = {
@@ -41,10 +81,19 @@ ScreenShot = (function() {
       sx: left - imgConf.left,
       sy: top - imgConf.top
     }, sx = _ref2.sx, sy = _ref2.sy;
-    _ref3 = {
-      dw: elements.canvas.width,
-      dh: elements.canvas.height
-    }, dw = _ref3.dw, dh = _ref3.dh;
+    for (_i = 0, _len = elements.length; _i < _len; _i++) {
+      item = elements[_i];
+      if (item.canvas != null) {
+        _ref3 = {
+          dw: item.canvas.width,
+          dh: item.canvas.height
+        }, dw = _ref3.dw, dh = _ref3.dh;
+        size.push({
+          dw: dw,
+          dh: dh
+        });
+      }
+    }
     return {
       img: imgConf.img,
       sx: sx / imgConf.width * imgConf.orgWidth,
@@ -53,29 +102,43 @@ ScreenShot = (function() {
       sh: sh / imgConf.height * imgConf.orgHeight,
       dx: 0,
       dy: 0,
-      dw: dw,
-      dh: dh
+      dsize: size
     };
   };
   _setView = function(conf) {
+    var i, item, _i, _len;
     if (conf.sx >= 0 && conf.sy >= 0) {
-      gCxt.clearRect(0, 0, conf.dw, conf.dh);
-      gCxt.drawImage(conf.img, conf.sx, conf.sy, conf.sw, conf.sh, conf.dx, conf.dy, conf.dw, conf.dh);
-    }
-  };
-  _getImgUrl = function(callback) {
-    var src, _base;
-    if (typeof (_base = elements.canvas).toDataURL === "function" ? _base.toDataURL() : void 0) {
-      element.canvas.toDataURL();
-      src = elements.canvas.toDataURL('image/png');
-      $('#cuted').attr('src', src);
-      if (typeof callback === "function") {
-        callback(src);
+      for (i = _i = 0, _len = elements.length; _i < _len; i = ++_i) {
+        item = elements[i];
+        if (item.canvas != null) {
+          item.cxt.clearRect(0, 0, conf.dw, conf.dh);
+          item.cxt.drawImage(conf.img, conf.sx, conf.sy, conf.sw, conf.sh, conf.dx, conf.dy, conf.dsize[i].dw, conf.dsize[i].dh);
+        }
       }
-      return src;
     }
   };
-  _restrictDragPos = function(drag, root) {
+  _reDraw = function(src) {
+    var $drag, $img;
+    $drag = $('#drag');
+    return $img = $(imgConf.img).attr('src', src);
+  };
+  _getPreviwerSrcs = function(callback) {
+    var item, urls, _i, _len;
+    urls = [];
+    for (_i = 0, _len = elements.length; _i < _len; _i++) {
+      item = elements[_i];
+      if (item.canvas != null) {
+        urls.push(item.canvas.toDataURL('image/png'));
+      }
+    }
+    return typeof callback === "function" ? callback(urls) : void 0;
+  };
+  _getCutImgSrc = function(callback) {
+    var src;
+    src = elements[elements.length - 2].canvas.toDataURL('image/png');
+    return typeof callback === "function" ? callback(src) : void 0;
+  };
+  _restrictDragPos = function(drag) {
     var height, item, left, top, width, _ref, _ref1;
     item = $(drag);
     _ref = item.position(), left = _ref.left, top = _ref.top;
@@ -109,28 +172,28 @@ ScreenShot = (function() {
     }
     return true;
   };
-  _create = function(id, getImgUrl) {
-    var canvas, clipBtn, img, root;
-    root = $(id).css({
-      position: 'relative',
-      lineHeight: $(id).height() + 'px'
+  _create = function(conf) {
+    var $item, $wraper, canvas, canvasAll, flashCanvasAll, h, i, img, item, ratio, root, val, w, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref;
+    root = $(conf.root).css({
+      lineHeight: $(conf.root).height() + 'px'
     });
-    canvas = $('<canvas>').css({
-      float: 'left',
-      width: '200px',
-      height: '200px',
-      float: 'right'
-    });
-    clipBtn = $('<input type="button" value="裁剪">').css({
-      display: 'block'
-    });
-    clipBtn.click(function() {
-      _getImgUrl(getImgUrl);
-    });
-    img = $('<img>').attr('src', 'images/5.jpg');
+    ratio = {
+      wClip: function() {
+        return $('<input type="text" value="0" >');
+      },
+      hClip: function() {
+        return $('<input type="text" value="0" >');
+      }
+    };
+    img = $('<img>').attr('src', conf.src);
     img.attr('id', 'source-image');
+    img.addClass('cut-img');
     img.bind('load', function() {
-      var drag, left, orgHeight, orgWidth, top, _ref, _ref1;
+      var data, drag, left, orgHeight, orgWidth, top, _ref, _ref1;
+      $(this).css({
+        width: 'auto',
+        verticalAlign: 'middle'
+      });
       _ref = {
         orgWidth: $(this).width(),
         orgHeight: $(this).height()
@@ -141,9 +204,7 @@ ScreenShot = (function() {
         orgHeight: orgHeight
       };
       $(this).css({
-        width: '400px',
-        height: 'auto',
-        verticalAlign: 'middle'
+        width: '400px'
       });
       _ref1 = $(this).position(), left = _ref1.left, top = _ref1.top;
       $.extend(imgConf, {
@@ -152,31 +213,87 @@ ScreenShot = (function() {
         width: $(this).width(),
         height: $(this).height()
       });
-      drag = $('<div>').attr('id', 'drag').css({
-        position: 'absolute',
-        width: '100px',
-        height: '100px',
-        left: left + 5 + 'px',
-        top: top + 5 + 'px',
-        cursor: 'move',
-        border: '3px dotted #fff',
-        backgroundColor: 'rgba( 255, 255, 255, 0 )'
-      });
-      drag.addClass("drag");
-      root.append(drag);
+      if ($('#drag').length === 0) {
+        drag = $('<div>').attr('id', 'drag').css({
+          position: 'absolute',
+          width: '100px',
+          height: '100px',
+          left: imgConf.width / 2 - 50 + 'px',
+          top: imgConf.height / 2 - 50 + 'px',
+          cursor: 'move',
+          border: '3px dotted #fff',
+          backgroundColor: 'rgba( 255, 255, 255, 0 )'
+        });
+        drag.addClass("drag");
+        root.append(drag);
+      } else {
+        drag = $('#drag');
+      }
+      data = _getCutData(drag[0]);
+      _setView(data);
     });
     root.append(img);
-    root.before(canvas, clipBtn);
-    if ($.browser.msie && $.browser.version < 9) {
-      canvas = window.G_vmlCanvasManager.initElement(canvas.get(0));
-    } else {
-      canvas = canvas.get(0);
+    canvasAll = [];
+    if ((conf.multiImage != null) && conf.multiImage.length > 0) {
+      _ref = conf.multiImage;
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        item = _ref[i];
+        $item = $(item);
+        w = $item.width();
+        h = $item.height();
+        canvas = $('<canvas>').get(0);
+        canvas.width = w;
+        canvas.height = h;
+        canvasAll.push(canvas);
+      }
     }
-    return {
-      canvas: canvas
-    };
+    if (conf.max != null) {
+      canvas = $('<canvas>').hide();
+      canvas = canvas.get(0);
+      canvas.width = conf.max.width;
+      canvas.height = conf.max.height;
+      canvasAll.push(canvas);
+    }
+    if ((conf.multiImage != null) && conf.multiImage.length > 0) {
+      for (i = _j = 0, _len1 = canvasAll.length; _j < _len1; i = ++_j) {
+        item = canvasAll[i];
+        $wraper = $(conf.multiImage[i]);
+        $wraper.append(item);
+      }
+    }
+    if (conf.max != null) {
+      root.append(canvasAll[canvasAll.length - 1]);
+    }
+    if ($.browser.msie && $.browser.version < 9) {
+      if ((conf.multiImage != null) && conf.multiImage.length > 0) {
+        flashCanvasAll = [];
+        for (i = _k = 0, _len2 = canvasAll.length; _k < _len2; i = ++_k) {
+          val = canvasAll[i];
+          canvas = FlashCanvas.initElement(val);
+          canvas.width = conf.multiImage[i].width + 'px';
+          canvas.height = conf.multiImage[i].height + 'px';
+          flashCanvasAll.push(canvas);
+        }
+        canvasAll = flashCanvasAll;
+      }
+    }
+    elements = [];
+    for (_l = 0, _len3 = canvasAll.length; _l < _len3; _l++) {
+      canvas = canvasAll[_l];
+      item = {
+        cxt: canvas.getContext('2d'),
+        canvas: canvas
+      };
+      item.cxt.fillStyle = 'transparent';
+      elements.push(item);
+    }
+    elements.push(img);
+    return elements;
   };
   return {
-    init: _init
+    init: _init,
+    reDraw: _reDraw,
+    getPreviewSrcs: _getPreviwerSrcs,
+    getCutImgSrc: _getCutImgSrc
   };
 })();

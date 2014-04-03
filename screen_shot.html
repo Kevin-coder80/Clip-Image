@@ -7,23 +7,55 @@
     <link rel="stylesheet" href="css/screen_shot.css">
     <!--[if lt IE 9]>
     <script src="js/html5shiv.min.js"></script>
-    <script src="js/excanvas.compiled.js"></script>
+    <script src="js/flashcanvas.js"></script>
     <![endif]-->
   </head>
-  <body>
-    <div id="shot-canvas" class="shot-canvas"></div><img id="cuted" src="" width="200px" height="200px">
+  <body><a href="#" class="cut">剪切</a><a href="#" class="change">切换</a>
+    <div class="row preview">
+      <div class="col-xs-6">
+        <div style="position: relative; width: 400px" class="big"></div>
+      </div>
+      <div class="col-xs-4">
+        <div style="width: 150px; height: 150px" class="medium canvas-wraper"></div>150x150像素
+      </div>
+      <div class="col-xs-2">
+        <div style="width: 75px; height: 75px" class="small canvas-wraper"></div>75x75像素
+        <div style="width: 50px; height: 50px" class="smaller canvas-wraper"></div>50x50像素
+      </div>
+    </div>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="js/jquery-migrate-1.1.1.min.js"></script>
     <script src="js/jquery-ui-1.10.3.min.js"></script>
     <script src="js/screen_shot.js"></script>
     <script>
       $( function () {
-        ScreenShot.init( {
-          root: '#shot-canvas',
-          getImgUrl: function ( src ) {
-            console.log( src );
+        var elements = ScreenShot.init( {
+          root: $( '.big' ),
+          src: 'images/5.jpg',
+          isRatio: false,
+          multiImage: $( '.canvas-wraper' ),
+          max: {
+            width: 500,
+            height: 500
           }
         } );
+        
+        $( '.change' ).bind( 'click', function () {
+          ScreenShot.reDraw( 'images/14022.jpg' );
+        } )
+        
+        $( '.cut' ).bind( 'click', function () {
+          /*
+          ScreenShot.getPreviewSrcs( function ( src ) {
+            console.log( src );
+          } );
+          */
+          
+          ScreenShot.getCutImgSrc( function ( src ) {
+            console.log( src )
+          } )
+          return false;
+        } )
       } );
     </script>
   </body>
