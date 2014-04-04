@@ -10,7 +10,7 @@ ScreenShot = do ->
     setTimeout ->
       _invokeJqueryPlugs( conf )
       return
-    , 1000
+    , 1500
 
     elements
 
@@ -26,7 +26,6 @@ ScreenShot = do ->
 
     $drag.resizable
       containment: '.big'
-      alsoResize: conf.isRatio or conf.alsoResize or false
       aspectRatio: conf.isRatio or conf.aspectRatio or false
       minWidth: 100
       minHeight: 100
@@ -168,48 +167,53 @@ ScreenShot = do ->
     img.attr( 'id', 'source-image' )
     img.addClass( 'cut-img' )
     img.bind 'load', ->
+      _this = this
       $( this ).css
         width: 'auto'
+        height: 'auto'
         verticalAlign: 'middle'
 
-      {orgWidth, orgHeight} =
-        orgWidth: $( this ).width()
-        orgHeight: $( this ).height()
+      setTimeout ->
+        {orgWidth, orgHeight} =
+          orgWidth: $( _this ).width()
+          orgHeight: $( _this ).height()
 
-      imgConf =
-        img: this
-        orgWidth: orgWidth
-        orgHeight: orgHeight
+        imgConf =
+          img: _this
+          orgWidth: orgWidth
+          orgHeight: orgHeight
 
-      $( this ).css
-        width: '400px'
+        $( _this ).css
+          width: conf.root.width() + 'px'
+          height: conf.root.height() + 'px'
 
-      {left, top} = $( this ).position()
-      $.extend( imgConf,
-        left: left
-        top: top
-        width: $( this ).width()
-        height: $( this ).height()
-      )
+        {left, top} = $( _this ).position()
+        $.extend( imgConf,
+          left: left
+          top: top
+          width: $( _this ).width()
+          height: $( _this ).height()
+        )
 
-      if $( '#drag' ).length is 0
-        drag = $( '<div>' ).attr( 'id', 'drag' ).css
-          position: 'absolute'
-          width: '100px'
-          height: '100px'
-          left: imgConf.width / 2 - 50 + 'px'
-          top: imgConf.height / 2 - 50 + 'px'
-          cursor: 'move'
-          border: '3px dotted #fff'
-          backgroundColor: 'rgba( 255, 255, 255, 0 )'
-        drag.addClass( "drag" )
-        root.append( drag )
-      else
-        drag = $( '#drag' )
+        if $( '#drag' ).length is 0
+          drag = $( '<div>' ).attr( 'id', 'drag' ).css
+            position: 'absolute'
+            width: '100px'
+            height: '100px'
+            left: imgConf.width / 2 - 50 + 'px'
+            top: imgConf.height / 2 - 50 + 'px'
+            cursor: 'move'
+            border: '3px dotted #fff'
+            backgroundColor: 'rgba( 255, 255, 255, 0 )'
+          drag.addClass( "drag" )
+          root.append( drag )
+        else
+          drag = $( '#drag' )
 
-      data = _getCutData( drag[ 0 ] )
-      _setView( data )
-      return
+        data = _getCutData( drag[ 0 ] )
+        _setView( data )
+        return
+      , 1000
     root.append( img )
 
     # 创建canvas

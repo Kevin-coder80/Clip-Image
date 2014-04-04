@@ -11,7 +11,7 @@ ScreenShot = (function() {
     aspectRatio = conf.isRatio || aspectRatio;
     setTimeout(function() {
       _invokeJqueryPlugs(conf);
-    }, 1000);
+    }, 1500);
     return elements;
   };
   _invokeJqueryPlugs = function(conf) {
@@ -27,7 +27,6 @@ ScreenShot = (function() {
     });
     $drag.resizable({
       containment: '.big',
-      alsoResize: conf.isRatio || conf.alsoResize || false,
       aspectRatio: conf.isRatio || conf.aspectRatio || false,
       minWidth: 100,
       minHeight: 100,
@@ -189,48 +188,54 @@ ScreenShot = (function() {
     img.attr('id', 'source-image');
     img.addClass('cut-img');
     img.bind('load', function() {
-      var data, drag, left, orgHeight, orgWidth, top, _ref, _ref1;
+      var _this;
+      _this = this;
       $(this).css({
         width: 'auto',
+        height: 'auto',
         verticalAlign: 'middle'
       });
-      _ref = {
-        orgWidth: $(this).width(),
-        orgHeight: $(this).height()
-      }, orgWidth = _ref.orgWidth, orgHeight = _ref.orgHeight;
-      imgConf = {
-        img: this,
-        orgWidth: orgWidth,
-        orgHeight: orgHeight
-      };
-      $(this).css({
-        width: '400px'
-      });
-      _ref1 = $(this).position(), left = _ref1.left, top = _ref1.top;
-      $.extend(imgConf, {
-        left: left,
-        top: top,
-        width: $(this).width(),
-        height: $(this).height()
-      });
-      if ($('#drag').length === 0) {
-        drag = $('<div>').attr('id', 'drag').css({
-          position: 'absolute',
-          width: '100px',
-          height: '100px',
-          left: imgConf.width / 2 - 50 + 'px',
-          top: imgConf.height / 2 - 50 + 'px',
-          cursor: 'move',
-          border: '3px dotted #fff',
-          backgroundColor: 'rgba( 255, 255, 255, 0 )'
+      return setTimeout(function() {
+        var data, drag, left, orgHeight, orgWidth, top, _ref, _ref1;
+        _ref = {
+          orgWidth: $(_this).width(),
+          orgHeight: $(_this).height()
+        }, orgWidth = _ref.orgWidth, orgHeight = _ref.orgHeight;
+        imgConf = {
+          img: _this,
+          orgWidth: orgWidth,
+          orgHeight: orgHeight
+        };
+        $(_this).css({
+          width: conf.root.width() + 'px',
+          height: conf.root.height() + 'px'
         });
-        drag.addClass("drag");
-        root.append(drag);
-      } else {
-        drag = $('#drag');
-      }
-      data = _getCutData(drag[0]);
-      _setView(data);
+        _ref1 = $(_this).position(), left = _ref1.left, top = _ref1.top;
+        $.extend(imgConf, {
+          left: left,
+          top: top,
+          width: $(_this).width(),
+          height: $(_this).height()
+        });
+        if ($('#drag').length === 0) {
+          drag = $('<div>').attr('id', 'drag').css({
+            position: 'absolute',
+            width: '100px',
+            height: '100px',
+            left: imgConf.width / 2 - 50 + 'px',
+            top: imgConf.height / 2 - 50 + 'px',
+            cursor: 'move',
+            border: '3px dotted #fff',
+            backgroundColor: 'rgba( 255, 255, 255, 0 )'
+          });
+          drag.addClass("drag");
+          root.append(drag);
+        } else {
+          drag = $('#drag');
+        }
+        data = _getCutData(drag[0]);
+        _setView(data);
+      }, 1000);
     });
     root.append(img);
     canvasAll = [];
